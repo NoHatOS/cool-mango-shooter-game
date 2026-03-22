@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🥭 SUPER MANGO RPG: CHAOS PROTOCOL 🥭</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a0a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Comic Neue', cursive;
+  }
+
+  #gameWrapper {
+    position: relative;
+    width: 800px;
+    height: 520px;
+  }
+
+  #gameCanvas {
+    display: block;
+    border: 4px solid #ff6600;
+    box-shadow: 0 0 30px #ff6600, 0 0 60px #ff3300;
+    cursor: crosshair;
+  }
+
+  /* HUD overlay */
+  #hud {
+    position: absolute;
+    top: 8px; left: 8px;
+    display: flex; gap: 12px; align-items: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #hpBar {
+    width: 160px; height: 18px;
+    background: #300;
+    border: 3px solid #fff;
+    position: relative;
+  }
+  #hpFill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff6600);
+    transition: width 0.1s;
+  }
+  #hpText { color: #fff; font-family: 'Bangers', cursive; font-size: 13px; text-shadow: 1px 1px 0 #000; }
+  #weaponInfo {
+    color: #ffe000;
+    font-family: 'Bangers', cursive;
+    font-size: 15px;
+    text-shadow: 2px 2px 0 #000;
+  }
+  #missionHud {
+    position: absolute;
+    top: 8px; right: 8px;
+    color: #00ffff;
+    font-family: 'Bangers', cursive;
+    font-size: 15px;
+    text-shadow: 2px 2px 0 #000;
+    pointer-events: none;
+    text-align: right;
+  }
+  #scoreHud {
+    position: absolute;
+    top: 32px; right: 8px;
+    color: #ffff00;
+    font-family: 'Bangers', cursive;
+    font-size: 14px;
+    text-shadow: 1px 1px 0 #000;
+    pointer-events: none;
+  }
+
+  /* Dialog box */
+  #dialogBox {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,20,0.92);
+    border-top: 4px solid #ff6600;
+    padding: 10px 14px 8px;
+    display: none;
+    z-index: 20;
+    pointer-events: none;
+  }
+  #dialogName {
+    font-family: 'Bangers', cursive;
+    font-size: 18px;
+    color: #ff6600;
+    text-shadow: 1px 1px 0 #000;
+    margin-bottom: 3px;
+  }
+  #dialogText {
+    font-family: 'Comic Neue', cursive;
+    font-size: 13px;
+    color: #ffffff;
+    line-height: 1.4;
+  }
+  #dialogAdvance {
+    position: absolute;
+    bottom: 6px; right: 10px;
+    color: #ff6600;
+    font-family: 'Bangers', cursive;
+    font-size: 13px;
+    animation: blink 0.6s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Mission progress bar (mission 4) */
+  #progressBar {
+    position: absolute;
+    top: 38px; left: 50%; transform: translateX(-50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #progressLabel { color: #00ff00; font-family: 'Bangers', cursive; font-size: 13px; text-shadow: 1px 1px 0 #000; }
+  #progressOuter { width: 200px; height: 14px; background: #002200; border: 2px solid #00ff00; }
+  #progressFill { height: 100%; background: #00ff00; width: 0%; transition: width 0.2s; }
+
+  /* Timer (mission 3) */
+  #timerHud {
+    position: absolute;
+    top: 38px; left: 50%; transform: translateX(-50%);
+    color: #ff3300;
+    font-family: 'Bangers', cursive;
+    font-size: 22px;
+    text-shadow: 2px 2px 0 #000;
+    display: none;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Title / Start screen overlay */
+  #titleScreen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  #titleScreen h1 {
+    font-family: 'Bangers', cursive;
+    font-size: 48px;
+    color: #ff6600;
+    text-shadow: 3px 3px 0 #000, 0 0 20px #ff3300;
+    line-height: 1;
+    text-align: center;
+  }
+  #titleScreen p {
+    color: #ffffff;
+    font-size: 14px;
+    margin-top: 8px;
+    font-family: 'Comic Neue', cursive;
+  }
+  #startBtn {
+    margin-top: 20px;
+    padding: 12px 32px;
+    font-family: 'Bangers', cursive;
+    font-size: 28px;
+    background: #ff3300;
+    color: #fff;
+    border: 4px solid #fff;
+    cursor: pointer;
+    text-shadow: 2px 2px 0 #000;
+    transition: transform 0.1s;
+  }
+  #startBtn:hover { transform: scale(1.08) rotate(-2deg); background: #ff6600; }
+
+  /* Win/Lose screen */
+  #endScreen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  #endTitle {
+    font-family: 'Bangers', cursive;
+    font-size: 42px;
+    text-align: center;
+    line-height: 1.1;
+    text-shadow: 3px 3px 0 #000;
+  }
+  #endSub {
+    color: #fff;
+    font-family: 'Comic Neue', cursive;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  #restartBtn {
+    margin-top: 18px;
+    padding: 10px 28px;
+    font-family: 'Bangers', cursive;
+    font-size: 24px;
+    background: #0055ff;
+    color: #fff;
+    border: 4px solid #fff;
+    cursor: pointer;
+  }
+  #restartBtn:hover { background: #0088ff; }
+</style>
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="gameCanvas" width="800" height="520"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div>
+      <div id="hpText">❤️ HP</div>
+      <div id="hpBar"><div id="hpFill" style="width:100%"></div></div>
+    </div>
+    <div id="weaponInfo">🔫 PISTOLA</div>
+  </div>
+  <div id="missionHud">🎯 MISIÓN 1</div>
+  <div id="scoreHud">💀 0 KILLS</div>
+
+  <div id="progressBar">
+    <div id="progressLabel">📡 HACKEO: 0%</div>
+    <div id="progressOuter"><div id="progressFill"></div></div>
+  </div>
+  <div id="timerHud">⏱ 30s</div>
+
+  <!-- Dialog -->
+  <div id="dialogBox">
+    <div id="dialogName">???</div>
+    <div id="dialogText">...</div>
+    <div id="dialogAdvance">▶ CLIC para continuar</div>
+  </div>
+
+  <!-- Screens -->
+  <div id="titleScreen">
+    <h1>🥭 SUPER MANGO RPG<br>CHAOS PROTOCOL 🥭</h1>
+    <p>WASD = Mover | RATÓN = Apuntar | CLIC = DISPARAR</p>
+    <button id="startBtn" onclick="Game.start()">¡JUGAR!</button>
+  </div>
+  <div id="endScreen">
+    <div id="endTitle">GAME OVER</div>
+    <div id="endSub">El Mango ha sido exprimido.</div>
+    <button id="restartBtn" onclick="Game.restart()">🔄 REINTENTAR</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  SUPER MANGO RPG: CHAOS PROTOCOL
+//  Un solo archivo - listo para GitHub Pages
+// ============================================================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+
+// ── UTILIDADES ──────────────────────────────────────────────
+const lerp = (a,b,t) => a + (b-a)*t;
+const rnd  = (min,max) => Math.random()*(max-min)+min;
+const rndI = (min,max) => Math.floor(rnd(min,max+1));
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const clamp= (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+const norm = v => { const m=Math.hypot(v.x,v.y)||1; return {x:v.x/m,y:v.y/m}; };
+
+// ── ESTADO GLOBAL ────────────────────────────────────────────
+const WORLD_W = 3200, WORLD_H = 2080;
+const VIEW_W  = 800,  VIEW_H  = 520;
+
+let G = {}; // estado del juego, se resetea en restart
+
+// ── SISTEMA DE PARTÍCULAS ────────────────────────────────────
+class Particle {
+  constructor(x,y,vx,vy,color,life,size=4) {
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    this.color=color; this.life=life; this.maxLife=life; this.size=size;
+  }
+  update(dt) {
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.vy+=300*dt; // gravedad
+    this.vx*=0.98;
+    this.life-=dt;
+  }
+  draw(cx,cy) {
+    const a = this.life/this.maxLife;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = this.color;
+    const s = this.size*a;
+    ctx.fillRect(this.x-cx-s/2, this.y-cy-s/2, s, s);
+    ctx.globalAlpha=1;
+  }
+}
+
+function spawnExplosion(x,y,count=30,colors=['#ff4400','#ffaa00','#ffff00','#ff0000']) {
+  for(let i=0;i<count;i++){
+    const angle=rnd(0,Math.PI*2), speed=rnd(60,320);
+    G.particles.push(new Particle(x,y,
+      Math.cos(angle)*speed, Math.sin(angle)*speed-rnd(0,100),
+      colors[rndI(0,colors.length-1)], rnd(0.4,1.2), rnd(3,8)
+    ));
+  }
+  G.screenShake = Math.max(G.screenShake, 12);
+}
+
+function spawnBlood(x,y,count=14) {
+  spawnExplosion(x,y,count,['#cc0000','#ff2200','#ff6600','#ffff00']);
+}
+
+function spawnSmoke(x,y,count=10) {
+  for(let i=0;i<count;i++){
+    const angle=rnd(0,Math.PI*2), speed=rnd(20,80);
+    G.particles.push(new Particle(x,y,
+      Math.cos(angle)*speed, Math.sin(angle)*speed-60,
+      `rgba(${rndI(120,200)},${rndI(120,200)},${rndI(120,200)},0.7)`,
+      rnd(0.5,1.5), rnd(6,14)
+    ));
+  }
+}
+
+// ── BALAS ────────────────────────────────────────────────────
+class Bullet {
+  constructor(x,y,angle,speed,dmg,isEnemy=false,size=5,color='#ffff00') {
+    this.x=x; this.y=y;
+    this.vx=Math.cos(angle)*speed; this.vy=Math.sin(angle)*speed;
+    this.dmg=dmg; this.isEnemy=isEnemy; this.size=size; this.color=color;
+    this.alive=true; this.age=0;
+  }
+  update(dt) {
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.age+=dt;
+    if(this.age>3||this.x<0||this.x>WORLD_W||this.y<0||this.y>WORLD_H) this.alive=false;
+  }
+  draw(cx,cy) {
+    ctx.fillStyle=this.color;
+    ctx.beginPath();
+    ctx.arc(this.x-cx, this.y-cy, this.size, 0, Math.PI*2);
+    ctx.fill();
+    // trail
+    ctx.globalAlpha=0.4;
+    ctx.fillStyle=this.color;
+    ctx.beginPath();
+    ctx.arc(this.x-cx-this.vx*0.03, this.y-cy-this.vy*0.03, this.size*0.6, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+// ── ARMAS ────────────────────────────────────────────────────
+const WEAPONS = {
+  pistola:   { name:'🔫 PISTOLA',   dmg:25, speed:600, rate:0.35, size:5, color:'#ffff00', spread:0.05, bazooka:false },
+  metralleta:{ name:'⚡ METRALLETA', dmg:15, speed:750, rate:0.08, size:4, color:'#00ffff', spread:0.15, bazooka:false },
+  bazooka:   { name:'💥 BAZUCA JUGO',dmg:80, speed:400, rate:0.9,  size:9, color:'#ff6600', spread:0.02, bazooka:true },
+};
+
+// ── JUGADOR ──────────────────────────────────────────────────
+class Player {
+  constructor() {
+    this.x=400; this.y=300;
+    this.w=28; this.h=28;
+    this.hp=100; this.maxHp=100;
+    this.speed=200;
+    this.vx=0; this.vy=0;
+    this.angle=0;
+    this.weapon='pistola';
+    this.shootCooldown=0;
+    this.invincible=0;
+    this.kills=0;
+    this.iceFriction=false; // misión 6
+    this.recoilVx=0; this.recoilVy=0;
+  }
+  update(dt, keys, mouse) {
+    const w = WEAPONS[this.weapon];
+    // movimiento
+    let dx=0, dy=0;
+    if(keys['KeyW']||keys['ArrowUp'])    dy=-1;
+    if(keys['KeyS']||keys['ArrowDown'])  dy=1;
+    if(keys['KeyA']||keys['ArrowLeft'])  dx=-1;
+    if(keys['KeyD']||keys['ArrowRight']) dx=1;
+    if(dx&&dy){dx*=0.707;dy*=0.707;}
+
+    if(this.iceFriction) {
+      this.vx = lerp(this.vx, dx*this.speed, dt*1.5);
+      this.vy = lerp(this.vy, dy*this.speed, dt*1.5);
+    } else {
+      this.vx = dx*this.speed;
+      this.vy = dy*this.speed;
+    }
+    // retroceso misión 6
+    this.vx += this.recoilVx; this.vy += this.recoilVy;
+    this.recoilVx *= 0.7; this.recoilVy *= 0.7;
+
+    this.x = clamp(this.x + this.vx*dt, this.w/2, WORLD_W-this.w/2);
+    this.y = clamp(this.y + this.vy*dt, this.h/2, WORLD_H-this.h/2);
+
+    // apuntado
+    const cam = G.camera;
+    this.angle = Math.atan2(mouse.y+cam.y-this.y, mouse.x+cam.x-this.x);
+
+    // disparo
+    this.shootCooldown -= dt;
+    if(mouse.down && this.shootCooldown <= 0) {
+      this.shootCooldown = w.rate;
+      const spread = (Math.random()-0.5)*w.spread;
+      const a = this.angle + spread;
+      G.bullets.push(new Bullet(this.x, this.y, a, w.speed, w.dmg, false, w.size, w.color));
+      if(w.bazooka) { spawnSmoke(this.x,this.y,6); }
+      // retroceso misión 6
+      if(this.iceFriction) {
+        this.recoilVx -= Math.cos(a)*w.speed*0.5;
+        this.recoilVy -= Math.sin(a)*w.speed*0.5;
+      }
+    }
+    this.invincible = Math.max(0, this.invincible-dt);
+  }
+  takeDamage(dmg) {
+    if(this.invincible>0) return;
+    this.hp -= dmg;
+    this.invincible = 0.4;
+    G.screenShake = Math.max(G.screenShake,8);
+    spawnBlood(this.x,this.y,8);
+    if(this.hp<=0){ this.hp=0; Game.gameOver(); }
+    updateHUD();
+  }
+  draw(cx,cy) {
+    const px=this.x-cx, py=this.y-cy;
+    ctx.save();
+    ctx.translate(px,py);
+    ctx.rotate(this.angle);
+
+    // CAMBIA AQUÍ LA IMAGEN DEL MANGO
+    // if(images.mango) { ctx.drawImage(images.mango,-14,-14,28,28); }
+    // else { ... código de placeholder abajo ... }
+
+    // Placeholder: cuerpo del mango
+    ctx.fillStyle = this.invincible%0.1<0.05 ? '#ffffff' : '#ff9900';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0,0,14,14,0,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    // hoja encima
+    ctx.fillStyle = '#00bb00';
+    ctx.beginPath();
+    ctx.ellipse(-3,-12,5,8,0.3,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    // cañón
+    ctx.fillStyle = '#555';
+    ctx.fillRect(0,-3,18,6);
+    ctx.strokeRect(0,-3,18,6);
+
+    ctx.restore();
+  }
+}
+
+// ── ENEMIGOS ─────────────────────────────────────────────────
+let enemyIdCounter=0;
+class Enemy {
+  constructor(x,y,type) {
+    this.id=enemyIdCounter++;
+    this.x=x; this.y=y;
+    this.alive=true;
+    this.type=type;
+    this.shootCooldown=rnd(0.5,2);
+    this.angle=0;
+    this.moveTimer=rnd(0,2);
+    this.vx=0; this.vy=0;
+
+    const T=ENEMY_TYPES[type];
+    this.hp=T.hp; this.maxHp=T.hp;
+    this.speed=T.speed;
+    this.w=T.w; this.h=T.h;
+    this.color=T.color;
+    this.dmg=T.dmg;
+    this.shootRate=T.shootRate;
+    this.scoreVal=T.score||10;
+    this.phase=0; // para bosses
+  }
+  update(dt) {
+    if(!this.alive) return;
+    const p = G.player;
+    const dx=p.x-this.x, dy=p.y-this.y;
+    const d=Math.hypot(dx,dy)||1;
+    this.angle=Math.atan2(dy,dx);
+
+    if(this.type==='blender' || this.type==='chef') {
+      this.updateBoss(dt,dx,dy,d);
+    } else {
+      // movimiento hacia jugador con algo de zigzag
+      this.moveTimer-=dt;
+      if(this.moveTimer<0){ this.moveTimer=rnd(0.5,1.5); this.zigzag=rnd(-1,1); }
+      const perp={x:-dy/d, y:dx/d};
+      const zz = (this.zigzag||0)*80;
+      this.vx=lerp(this.vx,(dx/d)*this.speed + perp.x*zz, dt*4);
+      this.vy=lerp(this.vy,(dy/d)*this.speed + perp.y*zz, dt*4);
+      this.x+=this.vx*dt; this.y+=this.vy*dt;
+
+      // disparo
+      this.shootCooldown-=dt;
+      if(this.shootCooldown<=0 && d<500) {
+        this.shootCooldown=this.shootRate;
+        const spread=(Math.random()-0.5)*0.2;
+        G.bullets.push(new Bullet(this.x,this.y,this.angle+spread,300,this.dmg,true,5,'#ff3333'));
+        if(this.type==='blender') {
+          // 360 cuchillas
+          for(let i=0;i<12;i++){
+            G.bullets.push(new Bullet(this.x,this.y,(Math.PI*2/12)*i,220,15,true,6,'#cc00ff'));
+          }
+        }
+      }
+    }
+  }
+  updateBoss(dt,dx,dy,d) {
+    const p=G.player;
+    const T=ENEMY_TYPES[this.type];
+    // movimiento circular + persecución
+    this.phase+=dt*T.phaseSpeed;
+    const orbitR=T.orbitR||0;
+    this.x+=( (dx/d)*T.speed + Math.cos(this.phase)*orbitR*0.5 )*dt;
+    this.y+=( (dy/d)*T.speed + Math.sin(this.phase)*orbitR*0.5 )*dt;
+    this.x=clamp(this.x,this.w/2,WORLD_W-this.w/2);
+    this.y=clamp(this.y,this.h/2,WORLD_H-this.h/2);
+    // disparo
+    this.shootCooldown-=dt;
+    if(this.shootCooldown<=0){
+      this.shootCooldown=T.shootRate;
+      if(this.type==='blender'){
+        const count=16;
+        for(let i=0;i<count;i++){
+          const a=(Math.PI*2/count)*i + this.phase*0.5;
+          G.bullets.push(new Bullet(this.x,this.y,a,260,18,true,7,'#cc00ff'));
+        }
+      } else if(this.type==='chef'){
+        // tres oleadas
+        for(let i=-2;i<=2;i++){
+          G.bullets.push(new Bullet(this.x,this.y,this.angle+i*0.25,350,25,true,8,'#ff6600'));
+        }
+        // bomba en area
+        if(Math.random()<0.3){
+          const a=rnd(0,Math.PI*2);
+          G.bullets.push(new Bullet(this.x,this.y,a,200,20,true,10,'#ffff00'));
+        }
+      }
+    }
+  }
+  takeDamage(dmg) {
+    this.hp-=dmg;
+    G.screenShake=Math.max(G.screenShake,4);
+    if(this.hp<=0){ this.die(); }
+  }
+  die() {
+    this.alive=false;
+    G.player.kills++;
+    spawnExplosion(this.x,this.y,25);
+    spawnBlood(this.x,this.y,12);
+    document.getElementById('scoreHud').textContent=`💀 ${G.player.kills} KILLS`;
+    MissionSystem.onEnemyDied(this.type);
+  }
+  draw(cx,cy) {
+    if(!this.alive) return;
+    const px=this.x-cx, py=this.y-cy;
+    if(px<-100||px>VIEW_W+100||py<-100||py>VIEW_H+100) return;
+    ctx.save();
+    ctx.translate(px,py);
+
+    // CAMBIA AQUÍ LAS IMÁGENES DE LOS ENEMIGOS
+    // (ver tipo en this.type: 'sandia','pina','pollo','troll','blender','chef')
+    // if(images[this.type]){ ctx.drawImage(images[this.type],...) }
+
+    const T=ENEMY_TYPES[this.type];
+    // sombra
+    ctx.globalAlpha=0.3; ctx.fillStyle='#000';
+    ctx.beginPath();
+    ctx.ellipse(2,this.h/2+4, this.w*0.5, 6, 0, 0, Math.PI*2);
+    ctx.fill(); ctx.globalAlpha=1;
+    // cuerpo
+    ctx.fillStyle=this.color;
+    ctx.strokeStyle='#000'; ctx.lineWidth=3;
+    if(this.type==='blender'||this.type==='chef'){
+      ctx.fillRect(-this.w/2,-this.h/2,this.w,this.h);
+      ctx.strokeRect(-this.w/2,-this.h/2,this.w,this.h);
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(0,0,this.w/2,this.h/2,0,0,Math.PI*2);
+      ctx.fill(); ctx.stroke();
+    }
+    // cara según tipo
+    this.drawFace();
+    // barra de vida
+    const bw=Math.max(this.w, 40);
+    ctx.fillStyle='#300'; ctx.fillRect(-bw/2,-this.h/2-10,bw,6);
+    ctx.fillStyle=this.hp/this.maxHp>0.5?'#00ff00':'#ff3300';
+    ctx.fillRect(-bw/2,-this.h/2-10,bw*(this.hp/this.maxHp),6);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+    ctx.strokeRect(-bw/2,-this.h/2-10,bw,6);
+
+    ctx.restore();
+  }
+  drawFace() {
+    ctx.fillStyle='#000';
+    const eyes={
+      sandia:  ()=>{ ctx.fillRect(-8,-5,5,5); ctx.fillRect(3,-5,5,5); },
+      pina:    ()=>{ ctx.fillRect(-7,-4,4,7); ctx.fillRect(3,-4,4,7); },
+      pollo:   ()=>{ ctx.beginPath();ctx.arc(-6,-4,4,0,Math.PI*2);ctx.fill();
+                     ctx.beginPath();ctx.arc(6,-4,4,0,Math.PI*2);ctx.fill();
+                     ctx.fillStyle='#ff0';ctx.fillRect(-4,4,8,5); },
+      troll:   ()=>{ ctx.fillStyle='#00ccff';ctx.font='bold 20px Comic Neue,cursive';
+                     ctx.fillText('>:)',  -14, 8); },
+      blender: ()=>{ ctx.fillStyle='#fff';ctx.font='bold 28px Comic Neue,cursive';
+                     ctx.fillText('⚡', -14, 14); },
+      chef:    ()=>{ ctx.fillStyle='#fff';ctx.font='bold 36px Comic Neue,cursive';
+                     ctx.fillText('👨‍🍳', -20, 20); },
+    };
+    if(eyes[this.type]) eyes[this.type]();
+  }
+}
+
+const ENEMY_TYPES = {
+  sandia:  { hp:40,  speed:80,  w:32, h:32, color:'#22cc22', dmg:12, shootRate:1.5, score:10 },
+  pina:    { hp:30,  speed:110, w:28, h:28, color:'#ffcc00', dmg:10, shootRate:1.2, score:10 },
+  pollo:   { hp:25,  speed:140, w:30, h:30, color:'#ffffff', dmg:8,  shootRate:0.8, score:5  },
+  troll:   { hp:35,  speed:90,  w:28, h:28, color:'#00aaff', dmg:12, shootRate:1.0, score:15 },
+  blender: { hp:600, speed:40,  w:80, h:80, color:'#aaaaaa', dmg:25, shootRate:1.0, score:500, phaseSpeed:1.5, orbitR:30 },
+  chef:    { hp:1200,speed:30,  w:140,h:140,color:'#ffcc99', dmg:35, shootRate:0.7, score:1000, phaseSpeed:0.8, orbitR:0  },
+};
+
+// ── OBSTÁCULOS / MUNDO ────────────────────────────────────────
+class Obstacle {
+  constructor(x,y,w,h,color='#663300',breakable=false) {
+    this.x=x;this.y=y;this.w=w;this.h=h;this.color=color;
+    this.breakable=breakable; this.hp=breakable?30:9999; this.alive=true;
+  }
+  draw(cx,cy) {
+    if(!this.alive) return;
+    ctx.fillStyle=this.color;
+    ctx.strokeStyle='#000'; ctx.lineWidth=2;
+    ctx.fillRect(this.x-cx, this.y-cy, this.w, this.h);
+    ctx.strokeRect(this.x-cx, this.y-cy, this.w, this.h);
+  }
+  contains(x,y) { return x>=this.x&&x<=this.x+this.w&&y>=this.y&&y<=this.y+this.h; }
+  aabb(ox,oy,ow,oh) {
+    return this.alive &&
+      ox+ow>this.x && ox<this.x+this.w &&
+      oy+oh>this.y && oy<this.y+this.h;
+  }
+}
+
+// ── MISIONES ─────────────────────────────────────────────────
+const DIALOGS = {
+  m1_start:[
+    {name:'🥭 MANGO', text:'¡Ay, ay! ¡La esposa se ha convertido en un meme viviente! Debo llegar al Dr. Kiwi...'},
+    {name:'📺 TELEVISOR', text:'ATENCIÓN: SANDÍAS PANDILLERAS HAN TOMADO EL BARRIO. EVITAR CONTACTO.'},
+  ],
+  m1_complete:[
+    {name:'🥝 DR. KIWI', text:'¡MANGO! ¡Por fin llegaste! El diagnóstico es grave: tu esposa tiene el Síndrome del Internet Caótico™.'},
+    {name:'🥝 DR. KIWI', text:'Necesitas ir al Super-Mango-Mart, a la granja, hackear la antena, exorcizar la licuadora y... ¡derrotar al Chef Final!'},
+    {name:'🥭 MANGO', text:'...¿En serio? ¿Todo eso?'},
+    {name:'🥝 DR. KIWI', text:'¡CORRE, BOBO!'},
+  ],
+  m2_start:[
+    {name:'📢 ALTAVOZ', text:'BIENVENIDO AL SUPER-MANGO-MART. OFERTAS HOY: ¡PLOMO A MITAD DE PRECIO!'},
+  ],
+  m2_complete:[
+    {name:'🥭 MANGO', text:'¡Compras completadas! Solo 47 heridas de bala. Éxito total.'},
+  ],
+  m3_start:[
+    {name:'🐔 POLLO JEFE', text:'BUAAAK... ¡MUERE, MANGO INTRUSO! ¡LAS AMETRALLADORAS SON NUESTRAS!'},
+  ],
+  m3_complete:[
+    {name:'🥭 MANGO', text:'¿QUÉ CLASE DE GRANJA ES ESTA?!'},
+  ],
+  m4_start:[
+    {name:'💻 ANTENA', text:'INICIANDO HACKEO... ADVERTENCIA: TROLLS DE INTERNET DETECTADOS.'},
+  ],
+  m4_complete:[
+    {name:'💻 ANTENA', text:'HACKEO COMPLETO. LA SEÑAL DEL CAOS HA SIDO... MÁS CAÓTICA. MISIÓN SUPERADA.'},
+  ],
+  m5_start:[
+    {name:'🌀 LICUADORA', text:'¡JAJAJA! ¡YO, LICUADORA MALIGNA, TE HARÉ JUGO DE MANGO! ¡LITERALMENTE!'},
+  ],
+  m5_complete:[
+    {name:'🥭 MANGO', text:'¡El exorcismo... FUNCIONÓ! Ahora a por el infierno de hielo...'},
+  ],
+  m6_start:[
+    {name:'❄️ NARRADOR', text:'INFIERNO DE HIELO: El suelo está tan resbaladizo que físicamente no tiene sentido. Los disparos te empujan. Buena suerte.'},
+  ],
+  m6_complete:[
+    {name:'🥭 MANGO', text:'¡Mis pies! ¡Ya no siento mis pies! ¡A por el Chef Final!'},
+  ],
+  m7_start:[
+    {name:'👨‍🍳 CHEF FINAL', text:'¡BIENVENIDO A MI COCINA, MANGUITO! ¡HOY EL MENÚ ES: MANGO FRITO CON LLANTO!'},
+    {name:'👨‍🍳 CHEF FINAL', text:'¡Tu esposa está en el refrigerador! ¡Nunca llegarás a tiempo!'},
+  ],
+  m7_complete:[
+    {name:'🥭 MANGO', text:'¡ESPOSA SALVADA. EL INTERNET ESTÁ FELIZ! 🎉🥭🎉'},
+    {name:'🌍 INTERNET', text:'¡GRACIAS MANGO! ¡ERES EL HÉROE QUE MERECÍAMOS!'},
+  ],
+};
+
+const TARGETS = { // puntos objetivo para cada misión
+  m1: { x:2600, y:400,  r:60, color:'#00ff00', label:'DR. KIWI' },
+  m2: { x:800,  y:1200, r:60, color:'#00aaff', label:'MANGO-MART' },
+  m4: { x:1600, y:1040, r:50, color:'#00ff88', label:'ANTENA' },
+};
+
+const MissionSystem = {
+  wave:0,
+  hackProgress:0,
+  surviveTimer:30,
+  waveSpawnTimer:0,
+  antennaBeingHeld:false,
+
+  init() {
+    this.wave=0; this.hackProgress=0; this.surviveTimer=30; this.waveSpawnTimer=0;
+    G.currentMission=1;
+    this.setupMission(1);
+  },
+
+  setupMission(m) {
+    G.currentMission=m;
+    document.getElementById('missionHud').textContent=`🎯 MISIÓN ${m}`;
+    G.enemies=[];
+    G.bullets=[];
+
+    const p=G.player;
+    const dialogs={
+      1:'m1_start',2:'m2_start',3:'m3_start',
+      4:'m4_start',5:'m5_start',6:'m6_start',7:'m7_start'
+    };
+    DialogSystem.show(dialogs[m]);
+
+    // configuración por misión
+    switch(m){
+      case 1:
+        p.x=200; p.y=200;
+        p.weapon='pistola';
+        p.iceFriction=false;
+        // spawnear sandías
+        for(let i=0;i<12;i++){
+          G.enemies.push(new Enemy(
+            rnd(400,2400), rnd(100,600), 'sandia'
+          ));
+        }
+        break;
+      case 2:
+        p.x=700; p.y=1100;
+        p.weapon='metralleta';
+        // 20 Ladrones Piña en el super
+        for(let i=0;i<20;i++){
+          G.enemies.push(new Enemy(
+            rnd(600,1200), rnd(900,1600), 'pina'
+          ));
+        }
+        // estanterías rotas
+        for(let i=0;i<8;i++){
+          G.obstacles.push(new Obstacle(600+i*80,1000,70,30,'#cc8800',true));
+        }
+        break;
+      case 3:
+        p.x=1600; p.y=600;
+        this.surviveTimer=30;
+        this.waveSpawnTimer=0;
+        document.getElementById('timerHud').style.display='block';
+        // oleada inicial
+        for(let i=0;i<10;i++){
+          G.enemies.push(new Enemy(
+            rnd(1200,2400), rnd(400,900), 'pollo'
+          ));
+        }
+        break;
+      case 4:
+        p.x=1500; p.y=1000;
+        this.hackProgress=0;
+        this.waveSpawnTimer=3;
+        this.wave=0;
+        document.getElementById('progressBar').style.display='flex';
+        document.getElementById('timerHud').style.display='none';
+        // trolls
+        for(let i=0;i<8;i++){
+          G.enemies.push(new Enemy(
+            rnd(1200,2200), rnd(700,1400), 'troll'
+          ));
+        }
+        break;
+      case 5:
+        p.x=1200; p.y=1800;
+        p.weapon='bazooka';
+        document.getElementById('progressBar').style.display='none';
+        G.enemies.push(new Enemy(1600,1600,'blender'));
+        break;
+      case 6:
+        p.x=2400; p.y=1600;
+        p.iceFriction=true;
+        document.getElementById('progressBar').style.display='none';
+        for(let i=0;i<15;i++){
+          G.enemies.push(new Enemy(
+            rnd(2000,3100), rnd(1200,2000), 'sandia'
+          ));
+        }
+        break;
+      case 7:
+        p.x=3000; p.y=1000;
+        p.iceFriction=false;
+        G.enemies.push(new Enemy(3000,500,'chef'));
+        break;
+    }
+  },
+
+  update(dt) {
+    const m=G.currentMission, p=G.player;
+    const alive=G.enemies.filter(e=>e.alive);
+
+    switch(m){
+      case 1: {
+        // llegar al Dr. Kiwi
+        const T=TARGETS.m1;
+        if(dist(p,T)<T.r) {
+          DialogSystem.show('m1_complete',()=>this.complete());
+        }
+        break;
+      }
+      case 2: {
+        if(alive.length===0) {
+          DialogSystem.show('m2_complete',()=>this.complete());
+        }
+        break;
+      }
+      case 3: {
+        this.surviveTimer-=dt;
+        document.getElementById('timerHud').textContent=`⏱ ${Math.ceil(this.surviveTimer)}s`;
+        this.waveSpawnTimer-=dt;
+        if(this.waveSpawnTimer<0&&alive.length<6){
+          this.waveSpawnTimer=4;
+          for(let i=0;i<5;i++){
+            G.enemies.push(new Enemy(rnd(1200,2400),rnd(300,1000),'pollo'));
+          }
+        }
+        if(this.surviveTimer<=0){
+          document.getElementById('timerHud').style.display='none';
+          DialogSystem.show('m3_complete',()=>this.complete());
+        }
+        break;
+      }
+      case 4: {
+        const T=TARGETS.m4;
+        const nearAntenna = dist(p,T)<120;
+        if(nearAntenna && alive.length===0){
+          this.hackProgress+=dt*(100/15);
+          document.getElementById('progressFill').style.width=this.hackProgress+'%';
+          document.getElementById('progressLabel').textContent=`📡 HACKEO: ${Math.floor(this.hackProgress)}%`;
+        }
+        this.waveSpawnTimer-=dt;
+        if(this.waveSpawnTimer<0&&alive.length<4){
+          this.waveSpawnTimer=6;
+          this.wave++;
+          const cnt=3+this.wave;
+          for(let i=0;i<cnt;i++){
+            G.enemies.push(new Enemy(rnd(1200,2200),rnd(700,1400),'troll'));
+          }
+        }
+        if(this.hackProgress>=100){
+          DialogSystem.show('m4_complete',()=>this.complete());
+          this.hackProgress=0;
+        }
+        break;
+      }
+      case 5: {
+        if(alive.length===0){
+          DialogSystem.show('m5_complete',()=>this.complete());
+        }
+        break;
+      }
+      case 6: {
+        if(alive.length===0){
+          p.iceFriction=false;
+          DialogSystem.show('m6_complete',()=>this.complete());
+        }
+        break;
+      }
+      case 7: {
+        if(alive.length===0){
+          DialogSystem.show('m7_complete',()=>Game.win());
+        }
+        break;
+      }
+    }
+  },
+
+  complete() {
+    const next=G.currentMission+1;
+    if(next<=7) this.setupMission(next);
+  },
+
+  onEnemyDied(type) {
+    // lógica especial si se necesita
+  }
+};
+
+// ── SISTEMA DE DIÁLOGOS ───────────────────────────────────────
+const DialogSystem = {
+  queue:[],
+  index:0,
+  active:false,
+  onDone:null,
+
+  show(key, cb=null) {
+    const lines=DIALOGS[key];
+    if(!lines||lines.length===0){ if(cb)cb(); return; }
+    this.queue=lines; this.index=0; this.active=true; this.onDone=cb;
+    this.render();
+    G.paused=true;
+  },
+
+  render() {
+    const d=document.getElementById('dialogBox');
+    const line=this.queue[this.index];
+    document.getElementById('dialogName').textContent=line.name;
+    document.getElementById('dialogText').textContent=line.text;
+    d.style.display='block';
+  },
+
+  advance() {
+    if(!this.active) return false;
+    this.index++;
+    if(this.index>=this.queue.length){
+      this.active=false;
+      document.getElementById('dialogBox').style.display='none';
+      G.paused=false;
+      if(this.onDone) this.onDone();
+      return true;
+    }
+    this.render();
+    return true;
+  }
+};
+
+// ── MAPA / FONDO ──────────────────────────────────────────────
+function drawWorld(cx,cy) {
+  // suelo
+  const m=G.currentMission;
+  let groundColor='#2d5a1b', gridColor='#3a7a25';
+
+  if(m===6){ groundColor='#aaddff'; gridColor='#cceeff'; } // hielo
+  else if(m===2){ groundColor='#555566'; gridColor='#667788'; } // supermercado
+  else if(m===5){ groundColor='#1a0a0a'; gridColor='#2a0a0a'; } // cueva
+  else if(m===7){ groundColor='#1a1a00'; gridColor='#2a2a00'; } // cocina
+
+  ctx.fillStyle=groundColor;
+  ctx.fillRect(0,0,VIEW_W,VIEW_H);
+
+  // grid
+  ctx.strokeStyle=gridColor; ctx.lineWidth=1;
+  const gx=Math.floor(cx/60)*60, gy=Math.floor(cy/60)*60;
+  for(let x=gx-cx;x<VIEW_W;x+=60){
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,VIEW_H);ctx.stroke();
+  }
+  for(let y=gy-cy;y<VIEW_H;y+=60){
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(VIEW_W,y);ctx.stroke();
+  }
+
+  // decoraciones por misión
+  if(m===6){
+    // cristales de hielo
+    ctx.fillStyle='rgba(180,230,255,0.3)';
+    for(let i=0;i<20;i++){
+      const ix=(i*347)%WORLD_W, iy=(i*213)%WORLD_H;
+      if(Math.abs(ix-cx)<VIEW_W+100 && Math.abs(iy-cy)<VIEW_H+100){
+        ctx.beginPath();
+        ctx.arc(ix-cx,iy-cy,30+i%20,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // dibujar obstáculos
+  G.obstacles.forEach(o=>o.draw(cx,cy));
+
+  // dibujar targets
+  const targets=[TARGETS.m1,TARGETS.m2,TARGETS.m4];
+  targets.forEach(T=>{
+    if(!T) return;
+    const tx=T.x-cx, ty=T.y-cy;
+    if(tx<-100||tx>VIEW_W+100||ty<-100||ty>VIEW_H+100) return;
+    const pulse=(Math.sin(Date.now()*0.004)+1)*0.5;
+    ctx.globalAlpha=0.3+pulse*0.4;
+    ctx.fillStyle=T.color;
+    ctx.beginPath();ctx.arc(tx,ty,T.r+pulse*8,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=T.color;
+    ctx.beginPath();ctx.arc(tx,ty,T.r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(tx,ty,T.r,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 13px Bangers,cursive';
+    ctx.textAlign='center'; ctx.fillText(T.label,tx,ty+4);
+    ctx.textAlign='left';
+  });
+}
+
+// ── HUD ───────────────────────────────────────────────────────
+function updateHUD() {
+  const p=G.player;
+  document.getElementById('hpFill').style.width=(p.hp/p.maxHp*100)+'%';
+  document.getElementById('weaponInfo').textContent=WEAPONS[p.weapon].name;
+}
+
+// ── COLISIONES ────────────────────────────────────────────────
+function checkCollisions() {
+  const p=G.player;
+  G.bullets.forEach(b=>{
+    if(!b.alive) return;
+    if(!b.isEnemy){
+      // bala jugador vs enemigos
+      G.enemies.forEach(e=>{
+        if(!e.alive) return;
+        if(dist(b,e)<(e.w/2+b.size)){
+          b.alive=false;
+          e.takeDamage(b.dmg);
+          spawnBlood(b.x,b.y,6);
+          if(WEAPONS[p.weapon].bazooka){ spawnExplosion(b.x,b.y,20); }
+        }
+      });
+      // bala vs obstáculos
+      G.obstacles.forEach(o=>{
+        if(!o.alive) return;
+        if(o.contains(b.x,b.y)){
+          b.alive=false;
+          if(o.breakable){
+            o.hp-=b.dmg;
+            spawnSmoke(b.x,b.y,5);
+            if(o.hp<=0){ o.alive=false; spawnExplosion(o.x+o.w/2,o.y+o.h/2,15); }
+          }
+        }
+      });
+    } else {
+      // bala enemiga vs jugador
+      if(dist(b,p)<(p.w/2+b.size)){
+        b.alive=false;
+        p.takeDamage(b.dmg);
+      }
+    }
+  });
+
+  // colisión física jugador vs enemigos (no bosses)
+  G.enemies.forEach(e=>{
+    if(!e.alive) return;
+    const d=dist(p,e);
+    const minD=(p.w+e.w)/2;
+    if(d<minD&&e.type!=='blender'&&e.type!=='chef'){
+      p.takeDamage(e.dmg*0.5);
+      const push=norm({x:p.x-e.x,y:p.y-e.y});
+      p.x+=push.x*3; p.y+=push.y*3;
+    }
+  });
+}
+
+// ── CÁMARA ────────────────────────────────────────────────────
+function updateCamera() {
+  const p=G.player;
+  const tx=p.x-VIEW_W/2, ty=p.y-VIEW_H/2;
+  G.camera.x=lerp(G.camera.x,tx,0.12);
+  G.camera.y=lerp(G.camera.y,ty,0.12);
+  G.camera.x=clamp(G.camera.x,0,WORLD_W-VIEW_W);
+  G.camera.y=clamp(G.camera.y,0,WORLD_H-VIEW_H);
+
+  // screen shake
+  if(G.screenShake>0){
+    G.camera.sx=rnd(-G.screenShake,G.screenShake);
+    G.camera.sy=rnd(-G.screenShake,G.screenShake);
+    G.screenShake*=0.85;
+    if(G.screenShake<0.3) G.screenShake=0;
+  } else { G.camera.sx=0; G.camera.sy=0; }
+}
+
+// ── BUCLE PRINCIPAL ───────────────────────────────────────────
+const Game = {
+  lastTime:0,
+  rafId:null,
+  running:false,
+
+  init() {
+    G = {
+      player: new Player(),
+      enemies: [],
+      bullets: [],
+      particles: [],
+      obstacles: this.buildObstacles(),
+      currentMission: 1,
+      camera: {x:0,y:0,sx:0,sy:0},
+      screenShake: 0,
+      paused: false,
+      keys: {},
+      mouse: {x:400,y:260,down:false},
+    };
+    MissionSystem.init();
+    updateHUD();
+  },
+
+  buildObstacles() {
+    const obs=[];
+    // muros del mundo (borde invisible manejado por clamp)
+    // arboles/rocas decorativas
+    const positions=[
+      [300,300],[700,500],[1000,200],[1500,800],[2000,300],
+      [2500,600],[2800,400],[1800,1200],[2200,1500],[3000,800],
+      [400,1500],[900,1800],[1300,1400],[1700,600],
+    ];
+    positions.forEach(([x,y])=>{
+      obs.push(new Obstacle(x-20,y-20,40,40,'#226622',false));
+    });
+    // paredes del supermercado
+    obs.push(new Obstacle(500,900,500,20,'#888888',false));
+    obs.push(new Obstacle(500,1700,500,20,'#888888',false));
+    obs.push(new Obstacle(500,900,20,800,'#888888',false));
+    obs.push(new Obstacle(1000,900,20,800,'#888888',false));
+    return obs;
+  },
+
+  start() {
+    document.getElementById('titleScreen').style.display='none';
+    this.init();
+    this.running=true;
+    this.lastTime=performance.now();
+    this.loop(this.lastTime);
+    this.bindEvents();
+  },
+
+  restart() {
+    document.getElementById('endScreen').style.display='none';
+    document.getElementById('progressBar').style.display='none';
+    document.getElementById('timerHud').style.display='none';
+    document.getElementById('dialogBox').style.display='none';
+    document.getElementById('scoreHud').textContent='💀 0 KILLS';
+    this.init();
+    this.running=true;
+    this.lastTime=performance.now();
+    if(this.rafId) cancelAnimationFrame(this.rafId);
+    this.loop(this.lastTime);
+  },
+
+  loop(ts) {
+    const dt=Math.min((ts-this.lastTime)/1000, 0.05);
+    this.lastTime=ts;
+    if(this.running) this.update(dt);
+    this.render();
+    this.rafId=requestAnimationFrame(t=>this.loop(t));
+  },
+
+  update(dt) {
+    if(G.paused) return;
+    G.player.update(dt, G.keys, G.mouse);
+    G.enemies.forEach(e=>e.update(dt));
+    G.bullets.forEach(b=>b.update(dt));
+    G.bullets=G.bullets.filter(b=>b.alive);
+    G.particles.forEach(p=>p.update(dt));
+    G.particles=G.particles.filter(p=>p.life>0);
+    // límite de partículas
+    if(G.particles.length>600) G.particles.splice(0,G.particles.length-600);
+    checkCollisions();
+    updateCamera();
+    MissionSystem.update(dt);
+  },
+
+  render() {
+    const cx=Math.round(G.camera.x+G.camera.sx);
+    const cy=Math.round(G.camera.y+G.camera.sy);
+
+    ctx.clearRect(0,0,VIEW_W,VIEW_H);
+    drawWorld(cx,cy);
+    G.particles.forEach(p=>p.draw(cx,cy));
+    G.enemies.forEach(e=>e.draw(cx,cy));
+    G.bullets.forEach(b=>b.draw(cx,cy));
+    G.player.draw(cx,cy);
+
+    // efecto hielo
+    if(G.currentMission===6){
+      ctx.fillStyle='rgba(150,220,255,0.08)';
+      ctx.fillRect(0,0,VIEW_W,VIEW_H);
+    }
+
+    // viñeta
+    const grad=ctx.createRadialGradient(VIEW_W/2,VIEW_H/2,VIEW_H*0.3,VIEW_W/2,VIEW_H/2,VIEW_H*0.85);
+    grad.addColorStop(0,'rgba(0,0,0,0)');
+    grad.addColorStop(1,'rgba(0,0,0,0.45)');
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  },
+
+  bindEvents() {
+    window.addEventListener('keydown', e=>{
+      G.keys[e.code]=true;
+      // avanzar diálogo con E o Espacio
+      if(e.code==='Space'||e.code==='KeyE') DialogSystem.advance();
+    });
+    window.addEventListener('keyup', e=>{ G.keys[e.code]=false; });
+    canvas.addEventListener('mousemove', e=>{
+      const r=canvas.getBoundingClientRect();
+      G.mouse.x=e.clientX-r.left; G.mouse.y=e.clientY-r.top;
+    });
+    canvas.addEventListener('mousedown', e=>{
+      if(e.button===0){
+        if(DialogSystem.active){ DialogSystem.advance(); return; }
+        G.mouse.down=true;
+      }
+    });
+    canvas.addEventListener('mouseup', e=>{ if(e.button===0) G.mouse.down=false; });
+    // cambio de armas
+    window.addEventListener('keydown', e=>{
+      if(e.code==='Digit1') { G.player.weapon='pistola'; updateHUD(); }
+      if(e.code==='Digit2') { G.player.weapon='metralleta'; updateHUD(); }
+      if(e.code==='Digit3') { G.player.weapon='bazooka'; updateHUD(); }
+    });
+  },
+
+  gameOver() {
+    this.running=false;
+    document.getElementById('endScreen').style.display='flex';
+    document.getElementById('endTitle').style.color='#ff3300';
+    document.getElementById('endTitle').textContent='💀 GAME OVER 💀\nEl Mango ha sido exprimido.';
+    document.getElementById('endSub').textContent=`Mataste ${G.player.kills} enemigos. Llegaste a la misión ${G.currentMission}.`;
+  },
+
+  win() {
+    this.running=false;
+    document.getElementById('endScreen').style.display='flex';
+    document.getElementById('endTitle').style.color='#ffff00';
+    document.getElementById('endTitle').textContent='🥭 ESPOSA SALVADA.\nEL INTERNET ESTÁ FELIZ 🎉';
+    document.getElementById('endSub').textContent=`¡Victoria total! ${G.player.kills} enemigos destruidos.`;
+    // lluvia de partículas victoria
+    for(let i=0;i<5;i++) setTimeout(()=>{
+      for(let j=0;j<30;j++) spawnExplosion(rnd(0,WORLD_W),rnd(0,WORLD_H),10,['#ffff00','#ff6600','#00ff00','#00ffff','#ff00ff']);
+    },i*300);
+  }
+};
+
+// ── INICIAR ───────────────────────────────────────────────────
+// El juego arranca cuando el jugador presiona "¡JUGAR!"
+// (ver botón #startBtn arriba)
+</script>
+</body>
+</html>
