@@ -438,9 +438,9 @@ class Player {
     ctx.translate(px,py);
     ctx.rotate(this.angle);
 
-    // CAMBIA AQUÍ LA IMAGEN DEL MANGO
-    // if(images.mango) { ctx.drawImage(images.mango,-14,-14,28,28); }
-    // else { ... código de placeholder abajo ... }
+const imgMango = new Image();
+imgMango.src = 'mango.png'; // Asegúrate de subir mango.png a GitHub
+ctx.drawImage(imgMango, -14, -14, 28, 28);
 
     // Placeholder: cuerpo del mango
     ctx.fillStyle = this.invincible%0.1<0.05 ? '#ffffff' : '#ff9900';
